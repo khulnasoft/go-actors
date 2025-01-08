@@ -46,13 +46,13 @@ func TestInboxSendAndProcessMany(t *testing.T) {
 			},
 		}
 		inbox.Start(mockProc)
-		msg := Envelope{}
-		inbox.Send(msg)
-
-		timer := time.NewTimer(time.Second)
-		select {
-		case <-processedMessages: // Message processed
-		case <-timer.C:
+  timer := time.NewTimer(time.Second)
+  defer timer.Stop()
+  select {
+  case <-processedMessages: // Message processed
+  case <-timer.C:
+      t.Errorf("Message was not processed in time")
+  }
 			t.Errorf("Message was not processed in time")
 		}
 		timer.Stop()
