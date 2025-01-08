@@ -57,6 +57,7 @@ func TestInboxSendAndProcessMany(t *testing.T) {
 		inbox.Stop()
 	}
 }
+
 type MockProcesser struct {
 	processFunc func([]Envelope)
 }
