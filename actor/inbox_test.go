@@ -32,9 +32,12 @@ func TestInboxSendAndProcess(t *testing.T) {
 }
 
 func TestInboxSendAndProcessMany(t *testing.T) {
-	for i := 0; i < 100000; i++ {
-		inbox := NewInbox(10)
-		processedMessages := make(chan Envelope, 10)
+    iterations := 100000
+    for i := 0; i < iterations; i++ {
+        t.Run(fmt.Sprintf("iteration-%d", i), func(t *testing.T) {
+            t.Parallel()
+            inbox := NewInbox(10)
+            processedMessages := make(chan Envelope, 10)
 		mockProc := MockProcesser{
 			processFunc: func(envelopes []Envelope) {
 				for _, e := range envelopes {
