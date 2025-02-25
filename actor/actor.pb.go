@@ -7,10 +7,11 @@
 package actor
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -195,12 +196,15 @@ func file_actor_actor_proto_rawDescGZIP() []byte {
 	return file_actor_actor_proto_rawDescData
 }
 
-var file_actor_actor_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
-var file_actor_actor_proto_goTypes = []interface{}{
-	(*PID)(nil),  // 0: actor.PID
-	(*Ping)(nil), // 1: actor.Ping
-	(*Pong)(nil), // 2: actor.Pong
-}
+var (
+	file_actor_actor_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+	file_actor_actor_proto_goTypes  = []interface{}{
+		(*PID)(nil),  // 0: actor.PID
+		(*Ping)(nil), // 1: actor.Ping
+		(*Pong)(nil), // 2: actor.Pong
+	}
+)
+
 var file_actor_actor_proto_depIdxs = []int32{
 	0, // 0: actor.Ping.from:type_name -> actor.PID
 	0, // 1: actor.Pong.from:type_name -> actor.PID
