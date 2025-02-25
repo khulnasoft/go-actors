@@ -1,20 +1,18 @@
 package actor
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-type fooProc struct {
-}
+type fooProc struct{}
 
-func (p fooProc) Start()                   {}
-func (p fooProc) PID() *PID                { return NewPID(LocalLookupAddr, "foo") }
-func (p fooProc) Send(*PID, any, *PID)     {}
-func (p fooProc) Invoke([]Envelope)        {}
-func (p fooProc) Shutdown(*sync.WaitGroup) {}
+func (p fooProc) Start()               {}
+func (p fooProc) PID() *PID            { return NewPID(LocalLookupAddr, "foo") }
+func (p fooProc) Send(*PID, any, *PID) {}
+func (p fooProc) Invoke([]Envelope)    {}
+func (p fooProc) Shutdown()            {}
 
 func TestGetRemoveAdd(t *testing.T) {
 	e, _ := NewEngine(NewEngineConfig())

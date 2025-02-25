@@ -24,8 +24,8 @@ type query struct {
 
 func newMonitor() actor.Receiver {
 	return &monitor{}
-
 }
+
 func (m *monitor) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Initialized:
@@ -46,17 +46,19 @@ func (m *monitor) Receive(c *actor.Context) {
 			deadletters: m.deadletters,
 		})
 	}
-
 }
 
-type customMessage struct{}
-type unstableActor struct {
-	spawnTime time.Time
-}
+type (
+	customMessage struct{}
+	unstableActor struct {
+		spawnTime time.Time
+	}
+)
 
 func newUnstableActor() actor.Receiver {
 	return &unstableActor{}
 }
+
 func (m *unstableActor) Receive(c *actor.Context) {
 	switch c.Message().(type) {
 	case actor.Initialized:
@@ -79,7 +81,7 @@ func main() {
 	repeater := e.SendRepeat(ua, customMessage{}, time.Millisecond*20)
 	time.Sleep(time.Second * 5)
 	repeater.Stop()
-	e.Poison(ua).Wait()
+	<-e.Poison(ua).Done()
 	res, err := e.Request(monitor, query{}, time.Second).Result()
 	if err != nil {
 		fmt.Println("Query", err)
@@ -89,6 +91,6 @@ func main() {
 	fmt.Printf("Observed %d starts\n", q.starts)
 	fmt.Printf("Observed %d stops\n", q.stops)
 	fmt.Printf("Observed %d deadletters\n", q.deadletters)
-	e.Poison(monitor).Wait() // the monitor will output stats on stop.
+	<-e.Poison(monitor).Done() // the monitor will output stats on stop.
 	fmt.Println("done")
 }

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	serviceName = "_actor.goactors_"
+	serviceName = "_actor.hollywood_"
 	domain      = "local."
 	host        = "pc1"
 )

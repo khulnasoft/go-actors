@@ -1,5 +1,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/khulnasoft/goactors)](https://goreportcard.com/report/github.com/khulnasoft/goactors)
 ![example workflow](https://github.com/khulnasoft/goactors/actions/workflows/build.yml/badge.svg?branch=master)
+<a href="https://discord.gg/gdwXmXYNTh">
+	<img src="https://discordapp.com/api/guilds/1025692014903316490/widget.png?style=shield" alt="Discord Shield"/>
+</a>
 
 # Blazingly fast, low latency actors for Golang
 
@@ -25,6 +28,8 @@ By using the Actor Model in your application, you can build highly scalable and 
 large number of concurrent users and complex interactions.
 
 ## Features
+
+Compiles to WASM! Both GOOS=js and GOOS=wasm32
 
 - Guaranteed message delivery on actor failure (buffer mechanism)
 - Fire & forget or request & response messaging, or both
@@ -68,7 +73,7 @@ compiler.
 ## Hello world.
 
 Let's go through a Hello world message. The complete example is available in the 
-[hello world](examples/helloworld) folder. Let's start in main:
+[hello world](examples/goactors) folder. Let's start in main:
 ```go
 engine, err := actor.NewEngine(actor.NewEngineConfig())
 ```
@@ -101,7 +106,9 @@ Simple enough. The `newHelloer` function returns a new actor. The actor is a str
 Lets look at the `Receive` method.
 
 ```go
-type message struct {}
+type message struct {
+	data string
+}
 
 func (h *helloer) Receive(ctx *actor.Context) {
 	switch msg := ctx.Message().(type) {
@@ -132,7 +139,7 @@ Local messages can be of any type.
 Finally, lets send a message to the actor.
 
 ```go
-engine.Send(pid, "hello world!")
+engine.Send(pid, &message{data: "hello, world!"})
 ```
 
 This will send a message to the actor. Goactors will route the message to the correct actor. The actor will then print
@@ -297,6 +304,19 @@ events fulfill the `actor.LogEvent` interface. See the Eventstream section above
 ```
 make test
 ```
+
+# Community and discussions
+Join our Discord community with over 2000 members for questions and a nice chat.
+<br>
+<a href="https://discord.gg/gdwXmXYNTh">
+	<img src="https://discordapp.com/api/guilds/1025692014903316490/widget.png?style=banner2" alt="Discord Banner"/>
+</a>
+
+# Used in Production By
+
+This project is currently used in production by the following organizations/projects:
+
+- [Sensora IoT](https://sensora.io)
 
 # License
 
