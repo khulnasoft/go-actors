@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/rand"
 	"reflect"
-	"sync"
 	"time"
 
 	"github.com/khulnasoft/goactors/actor"
@@ -131,11 +130,9 @@ func (c *Cluster) Start() {
 }
 
 // Stop will shutdown the cluster poisoning all its actors.
-func (c *Cluster) Stop() *sync.WaitGroup {
-	wg := sync.WaitGroup{}
-	c.engine.Poison(c.agentPID, &wg)
-	c.engine.Poison(c.providerPID, &wg)
-	return &wg
+func (c *Cluster) Stop() {
+	<-c.engine.Poison(c.agentPID).Done()
+	<-c.engine.Poison(c.providerPID).Done()
 }
 
 // Spawn an actor locally on the node with cluster awareness.
@@ -231,8 +228,27 @@ func (c *Cluster) HasKind(name string) bool {
 	return false
 }
 
-// TODO: Weird
-func (c *Cluster) GetActivated(id string) *actor.PID {
+// GetActiveByKind returns all the actor PIDS that are active across the cluster
+// by the given kind.
+//
+//	playerPids := c.GetActiveByKind("player")
+//	// [127.0.0.1:34364/player/1 127.0.0.1:34365/player/2]
+func (c *Cluster) GetActiveByKind(kind string) []*actor.PID {
+	resp, err := c.engine.Request(c.agentPID, getActive{kind: kind}, c.config.requestTimeout).Result()
+	if err != nil {
+		return []*actor.PID{}
+	}
+	if res, ok := resp.([]*actor.PID); ok {
+		return res
+	}
+	return []*actor.PID{}
+}
+
+// GetActiveByID returns the full PID by the given ID.
+//
+//	playerPid := c.GetActiveByID("player/1")
+//	// 127.0.0.1:34364/player/1
+func (c *Cluster) GetActiveByID(id string) *actor.PID {
 	resp, err := c.engine.Request(c.agentPID, getActive{id: id}, c.config.requestTimeout).Result()
 	if err != nil {
 		return nil
