@@ -11,8 +11,6 @@ type poisonPill struct {
 	cancel   context.CancelFunc
 	graceful bool
 }
-type (
-	Initialized struct{}
-	Started     struct{}
-	Stopped     struct{}
-)
+type Initialized struct{}
+type Started struct{}
+type Stopped struct{}
