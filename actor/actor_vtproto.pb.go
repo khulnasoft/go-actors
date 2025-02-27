@@ -6,11 +6,10 @@ package actor
 
 import (
 	fmt "fmt"
-	io "io"
-	bits "math/bits"
-
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	io "io"
+	bits "math/bits"
 )
 
 const (
@@ -97,7 +96,6 @@ func (this *PID) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Ping) EqualVT(that *Ping) bool {
 	if this == that {
 		return true
@@ -117,7 +115,6 @@ func (this *Ping) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Pong) EqualVT(that *Pong) bool {
 	if this == that {
 		return true
@@ -137,7 +134,6 @@ func (this *Pong) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (m *PID) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -282,7 +278,6 @@ func encodeVarint(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-
 func (m *PID) MarshalVTStrict() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -465,11 +460,9 @@ func (m *Pong) SizeVT() (n int) {
 func sov(x uint64) (n int) {
 	return (bits.Len64(x|1) + 6) / 7
 }
-
 func soz(x uint64) (n int) {
 	return sov(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-
 func (m *PID) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -585,7 +578,6 @@ func (m *PID) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Ping) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -673,7 +665,6 @@ func (m *Ping) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Pong) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0

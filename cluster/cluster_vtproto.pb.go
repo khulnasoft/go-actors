@@ -6,12 +6,11 @@ package cluster
 
 import (
 	fmt "fmt"
-	io "io"
-	bits "math/bits"
-
 	actor "github.com/khulnasoft/goactors/actor"
 	proto "google.golang.org/protobuf/proto"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	io "io"
+	bits "math/bits"
 )
 
 const (
@@ -377,7 +376,6 @@ func (this *CID) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Member) EqualVT(that *Member) bool {
 	if this == that {
 		return true
@@ -412,7 +410,6 @@ func (this *Member) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Members) EqualVT(that *Members) bool {
 	if this == that {
 		return true
@@ -446,7 +443,6 @@ func (this *Members) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *MembersJoin) EqualVT(that *MembersJoin) bool {
 	if this == that {
 		return true
@@ -480,7 +476,6 @@ func (this *MembersJoin) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *MembersLeave) EqualVT(that *MembersLeave) bool {
 	if this == that {
 		return true
@@ -514,7 +509,6 @@ func (this *MembersLeave) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Handshake) EqualVT(that *Handshake) bool {
 	if this == that {
 		return true
@@ -534,7 +528,6 @@ func (this *Handshake) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Topology) EqualVT(that *Topology) bool {
 	if this == that {
 		return true
@@ -622,7 +615,6 @@ func (this *Topology) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ActorInfo) EqualVT(that *ActorInfo) bool {
 	if this == that {
 		return true
@@ -646,7 +638,6 @@ func (this *ActorInfo) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ActorTopology) EqualVT(that *ActorTopology) bool {
 	if this == that {
 		return true
@@ -680,7 +671,6 @@ func (this *ActorTopology) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Activation) EqualVT(that *Activation) bool {
 	if this == that {
 		return true
@@ -704,7 +694,6 @@ func (this *Activation) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *Deactivation) EqualVT(that *Deactivation) bool {
 	if this == that {
 		return true
@@ -728,7 +717,6 @@ func (this *Deactivation) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ActivationRequest) EqualVT(that *ActivationRequest) bool {
 	if this == that {
 		return true
@@ -757,7 +745,6 @@ func (this *ActivationRequest) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (this *ActivationResponse) EqualVT(that *ActivationResponse) bool {
 	if this == that {
 		return true
@@ -787,7 +774,6 @@ func (this *ActivationResponse) EqualMessageVT(thatMsg proto.Message) bool {
 	}
 	return this.EqualVT(that)
 }
-
 func (m *CID) MarshalVT() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -1541,7 +1527,6 @@ func encodeVarint(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-
 func (m *CID) MarshalVTStrict() (dAtA []byte, err error) {
 	if m == nil {
 		return nil, nil
@@ -2573,11 +2558,9 @@ func (m *ActivationResponse) SizeVT() (n int) {
 func sov(x uint64) (n int) {
 	return (bits.Len64(x|1) + 6) / 7
 }
-
 func soz(x uint64) (n int) {
 	return sov(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-
 func (m *CID) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2769,7 +2752,6 @@ func (m *CID) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Member) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -2949,7 +2931,6 @@ func (m *Member) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Members) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3035,7 +3016,6 @@ func (m *Members) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *MembersJoin) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3121,7 +3101,6 @@ func (m *MembersJoin) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *MembersLeave) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3207,7 +3186,6 @@ func (m *MembersLeave) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Handshake) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3295,7 +3273,6 @@ func (m *Handshake) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Topology) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3502,7 +3479,6 @@ func (m *Topology) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ActorInfo) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3598,7 +3574,6 @@ func (m *ActorInfo) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ActorTopology) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3684,7 +3659,6 @@ func (m *ActorTopology) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Activation) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3780,7 +3754,6 @@ func (m *Activation) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *Deactivation) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -3876,7 +3849,6 @@ func (m *Deactivation) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ActivationRequest) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4043,7 +4015,6 @@ func (m *ActivationRequest) UnmarshalVT(dAtA []byte) error {
 	}
 	return nil
 }
-
 func (m *ActivationResponse) UnmarshalVT(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
