@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/DataDog/gostackparse v0.7.0
 	github.com/grandcat/zeroconf v1.0.0
-	github.com/planetscale/vtprotobuf v0.6.0
+	github.com/planetscale/vtprotobuf v0.5.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/stretchr/testify v1.8.4
 	google.golang.org/grpc v1.60.1
@@ -31,6 +31,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/uuid v1.5.0
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/zeebo/errs v1.2.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2
