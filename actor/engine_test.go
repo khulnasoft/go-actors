@@ -13,11 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type tick struct{}
-type tickReceiver struct {
-	ticks int
-	wg    *sync.WaitGroup
-}
+type (
+	tick         struct{}
+	tickReceiver struct {
+		ticks int
+		wg    *sync.WaitGroup
+	}
+)
 
 func (r *tickReceiver) Receive(c *Context) {
 	switch c.Message().(type) {
@@ -71,9 +73,7 @@ func TestSendToNilPID(t *testing.T) {
 }
 
 func TestSendRepeat(t *testing.T) {
-	var (
-		wg = &sync.WaitGroup{}
-	)
+	wg := &sync.WaitGroup{}
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
@@ -274,9 +274,7 @@ func TestStopWaitContextDone(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	var (
-		wg = sync.WaitGroup{}
-	)
+	wg := sync.WaitGroup{}
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	for i := 0; i < 4; i++ {
@@ -335,9 +333,7 @@ func TestPoisonWaitGroup(t *testing.T) {
 }
 
 func TestPoison(t *testing.T) {
-	var (
-		wg = sync.WaitGroup{}
-	)
+	wg := sync.WaitGroup{}
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	for i := 0; i < 4; i++ {
@@ -379,7 +375,6 @@ func TestRequestResponse(t *testing.T) {
 		_, err := resp.Result()
 		assert.Error(t, err)
 		assert.Nil(t, e.Registry.get(resp.pid))
-
 	})
 	t.Run("should not timeout", func(t *testing.T) {
 		for i := 0; i < 200; i++ {

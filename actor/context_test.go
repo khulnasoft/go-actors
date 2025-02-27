@@ -75,9 +75,7 @@ func TestSpawnChildPID(t *testing.T) {
 }
 
 func TestChild(t *testing.T) {
-	var (
-		wg = sync.WaitGroup{}
-	)
+	wg := sync.WaitGroup{}
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
@@ -144,9 +142,7 @@ func TestGetPID(t *testing.T) {
 }
 
 func TestSpawnChild(t *testing.T) {
-	var (
-		wg = sync.WaitGroup{}
-	)
+	wg := sync.WaitGroup{}
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
