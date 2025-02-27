@@ -97,7 +97,7 @@ func (a *Agent) handleGetActive(c *actor.Context, msg getActive) {
 		for id, pid := range a.activated {
 			parts := strings.Split(id, "/")
 			if len(parts) != 2 {
-				break
+				continue
 			}
 			kind := parts[0]
 			if msg.kind == kind {
