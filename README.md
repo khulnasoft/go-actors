@@ -219,3 +219,80 @@ make test
 
 Goactors is licensed under the **MIT License**.
 
+---
+
+## 📚 Hierarchical Supervision Strategy
+
+Goactors supports a hierarchical supervision strategy where parent actors can supervise their child actors. If a child actor fails, the parent actor can decide whether to restart the child, escalate the failure, or stop the child. This can be implemented by adding supervision policies to the parent actor's context and handling child actor failures accordingly.
+
+### Example
+```go
+parentPID := e.SpawnFunc(func(c *actor.Context) {
+	switch c.Message().(type) {
+	case actor.Started:
+		child := c.SpawnChildFunc(func(childCtx *actor.Context) {
+			switch childCtx.Message().(type) {
+			case actor.Started:
+				childCtx.Send(childCtx.PID(), "fail")
+			case string:
+				panic("child actor failure")
+			}
+		}, "child")
+		c.engine.Subscribe(child)
+	case actor.ActorRestartedEvent:
+		// Handle child actor restart
+	}
+}, "parent")
+```
+
+---
+
+## 🔄 Customizable Restart Policies
+
+Goactors allows actors to have customizable restart policies based on the type of failure. For example, actors can have different restart strategies for different types of errors, such as immediate restart, exponential backoff, or a fixed delay. This can be implemented by adding a configuration option to the actor's context and handling restarts based on the specified policy.
+
+### Example
+```go
+parentPID := e.SpawnFunc(func(c *actor.Context) {
+	switch c.Message().(type) {
+	case actor.Started:
+		child := c.SpawnChildFunc(func(childCtx *actor.Context) {
+			switch childCtx.Message().(type) {
+			case actor.Started:
+				childCtx.Send(childCtx.PID(), "fail")
+			case string:
+				panic("child actor failure")
+			}
+		}, "child", actor.WithRestartPolicy(actor.ExponentialBackoff))
+		c.engine.Subscribe(child)
+	case actor.ActorRestartedEvent:
+		// Handle child actor restart
+	}
+}, "parent")
+```
+
+---
+
+## 🩺 Actor Health Monitoring
+
+Goactors provides a health monitoring system for actors to detect and handle unhealthy actors. Periodically check the health of actors and take appropriate actions, such as restarting or stopping unhealthy actors. This can be implemented by adding a health check mechanism to the actor's context and scheduling periodic health checks using the existing `SendRepeat` method.
+
+### Example
+```go
+parentPID := e.SpawnFunc(func(c *actor.Context) {
+	switch c.Message().(type) {
+	case actor.Started:
+		child := c.SpawnChildFunc(func(childCtx *actor.Context) {
+			switch childCtx.Message().(type) {
+			case actor.Started:
+				childCtx.EnableHealthCheck(time.Millisecond*10, func() bool {
+					return false
+				})
+			}
+		}, "child")
+		c.engine.Subscribe(child)
+	case actor.ActorUnhealthyEvent:
+		// Handle unhealthy actor
+	}
+}, "parent")
+```

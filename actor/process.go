@@ -132,7 +132,7 @@ func (p *process) Start() {
 
 	p.context.message = Started{}
 	applyMiddleware(recv.Receive, p.Opts.Middleware...)(p.context)
-	p.context.engine.BroadcastEvent(ActorStartedEvent{PID: p.pid, Timestamp: time.Now()})
+	p.context.engine.BroadcastEvent(ActorStartedEvent{PID: p.pid, Timestamp: time.now()})
 	// If we have messages in our buffer, invoke them.
 	if len(p.mbuffer) > 0 {
 		p.Invoke(p.mbuffer)
@@ -199,6 +199,11 @@ func (p *process) cleanup(cancel context.CancelFunc) {
 	applyMiddleware(p.context.receiver.Receive, p.Opts.Middleware...)(p.context)
 
 	p.context.engine.BroadcastEvent(ActorStoppedEvent{PID: p.pid, Timestamp: time.Now()})
+
+	// Notify dependent actors or services about the shutdown
+	if p.context.parentCtx != nil {
+		p.context.parentCtx.engine.BroadcastEvent(ActorStoppedEvent{PID: p.pid, Timestamp: time.Now()})
+	}
 }
 
 func (p *process) PID() *PID { return p.pid }
@@ -212,7 +217,7 @@ func (p *process) Shutdown() {
 
 func cleanTrace(stack []byte) []byte {
 	goros, err := gostackparse.Parse(bytes.NewReader(stack))
-	if err != nil {
+	if (err != nil) {
 		slog.Error("failed to parse stacktrace", "err", err)
 		return stack
 	}
