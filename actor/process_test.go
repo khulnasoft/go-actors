@@ -117,3 +117,105 @@ func Test_StartupMessages(t *testing.T) {
 		return
 	}
 }
+
+func Test_ProcessInitialization(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+
+	type initMsg struct{}
+	type testMsg struct{}
+
+	msgCh := make(chan any, 10)
+	pid := e.SpawnFunc(func(c *Context) {
+		switch c.Message().(type) {
+		case Initialized:
+			msgCh <- Initialized{}
+		case Started:
+			msgCh <- Started{}
+		case testMsg:
+			msgCh <- testMsg{}
+		}
+	}, "testProcess")
+
+	e.Send(pid, testMsg{})
+
+	select {
+	case msg := <-msgCh:
+		_, ok := msg.(Initialized)
+		require.True(t, ok)
+	case <-time.After(time.Second):
+		t.Error("test timed out")
+	}
+
+	select {
+	case msg := <-msgCh:
+		_, ok := msg.(Started)
+		require.True(t, ok)
+	case <-time.After(time.Second):
+		t.Error("test timed out")
+	}
+
+	select {
+	case msg := <-msgCh:
+		_, ok := msg.(testMsg)
+		require.True(t, ok)
+	case <-time.After(time.Second):
+		t.Error("test timed out")
+	}
+}
+
+func Test_ProcessMessageHandling(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+
+	type testMsg struct {
+		data string
+	}
+
+	msgCh := make(chan any, 10)
+	pid := e.SpawnFunc(func(c *Context) {
+		switch msg := c.Message().(type) {
+		case testMsg:
+			msgCh <- msg.data
+		}
+	}, "testProcess")
+
+	e.Send(pid, testMsg{data: "Hello, World!"})
+
+	select {
+	case msg := <-msgCh:
+		require.Equal(t, "Hello, World!", msg)
+	case <-time.After(time.Second):
+		t.Error("test timed out")
+	}
+}
+
+func Test_ProcessErrorRecovery(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+
+	type testMsg struct {
+		data string
+	}
+	type errorMsg struct{}
+
+	msgCh := make(chan any, 10)
+	pid := e.SpawnFunc(func(c *Context) {
+		switch c.Message().(type) {
+		case errorMsg:
+			panic("test error")
+		case testMsg:
+			msgCh <- c.Message()
+		}
+	}, "testProcess", WithMaxRestarts(1))
+
+	e.Send(pid, errorMsg{})
+	e.Send(pid, testMsg{data: "Recovered!"})
+
+	select {
+	case msg := <-msgCh:
+		require.Equal(t, testMsg{data: "Recovered!"}, msg)
+	case <-time.After(time.Second):
+		t.Error("test timed out")
+	}
+}
