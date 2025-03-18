@@ -48,6 +48,11 @@ func (c *Context) Receiver() Receiver {
 // See Engine.Request for information. This is just a helper function doing that
 // calls Request on the underlying Engine. c.Engine().Request().
 func (c *Context) Request(pid *PID, msg any, timeout time.Duration) *Response {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Request completed", "pid", pid, "duration", duration)
+	}()
 	return c.engine.Request(pid, msg, timeout)
 }
 
@@ -79,6 +84,7 @@ func (c *Context) SpawnChild(p Producer, name string, opts ...OptFunc) *PID {
 	pid := c.engine.SpawnProc(proc)
 	c.children.Set(pid.ID, pid)
 
+	slog.Info("Spawned child actor", "parent", c.PID(), "child", pid)
 	return proc.PID()
 }
 
@@ -94,6 +100,11 @@ func (c *Context) SpawnChildFunc(f func(*Context), name string, opts ...OptFunc)
 // of the message can call Context.Sender() to know
 // the PID of the process that sent this message.
 func (c *Context) Send(pid *PID, msg any) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Message sent", "pid", pid, "duration", duration)
+	}()
 	c.engine.SendWithSender(pid, msg, c.pid)
 }
 
@@ -115,6 +126,11 @@ func (c *Context) SendRepeat(pid *PID, msg any, interval time.Duration) SendRepe
 // Forward will forward the current received message to the given PID.
 // This will also set the "forwarder" as the sender of the message.
 func (c *Context) Forward(pid *PID) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Message forwarded", "pid", pid, "duration", duration)
+	}()
 	c.engine.SendWithSender(pid, c.message, c.pid)
 }
 
