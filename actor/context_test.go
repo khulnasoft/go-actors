@@ -242,3 +242,84 @@ func TestContextGracefulShutdown(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestHierarchicalSupervision(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	parentPID := e.SpawnFunc(func(c *Context) {
+		switch c.Message().(type) {
+		case Started:
+			child := c.SpawnChildFunc(func(childCtx *Context) {
+				switch childCtx.Message().(type) {
+				case Started:
+					childCtx.Send(childCtx.PID(), "fail")
+				case string:
+					panic("child actor failure")
+				}
+			}, "child")
+			c.engine.Subscribe(child)
+		case ActorRestartedEvent:
+			wg.Done()
+		}
+	}, "parent")
+
+	wg.Wait()
+	<-e.Poison(parentPID).Done()
+}
+
+func TestCustomizableRestartPolicies(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	parentPID := e.SpawnFunc(func(c *Context) {
+		switch c.Message().(type) {
+		case Started:
+			child := c.SpawnChildFunc(func(childCtx *Context) {
+				switch childCtx.Message().(type) {
+				case Started:
+					childCtx.Send(childCtx.PID(), "fail")
+				case string:
+					panic("child actor failure")
+				}
+			}, "child", WithRestartPolicy(ExponentialBackoff))
+			c.engine.Subscribe(child)
+		case ActorRestartedEvent:
+			wg.Done()
+		}
+	}, "parent")
+
+	wg.Wait()
+	<-e.Poison(parentPID).Done()
+}
+
+func TestHealthMonitoring(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	parentPID := e.SpawnFunc(func(c *Context) {
+		switch c.Message().(type) {
+		case Started:
+			child := c.SpawnChildFunc(func(childCtx *Context) {
+				switch childCtx.Message().(type) {
+				case Started:
+					childCtx.EnableHealthCheck(time.Millisecond*10, func() bool {
+						return false
+					})
+				}
+			}, "child")
+			c.engine.Subscribe(child)
+		case ActorUnhealthyEvent:
+			wg.Done()
+		}
+	}, "parent")
+
+	wg.Wait()
+	<-e.Poison(parentPID).Done()
+}
