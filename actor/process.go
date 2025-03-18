@@ -132,7 +132,7 @@ func (p *process) Start() {
 
 	p.context.message = Started{}
 	applyMiddleware(recv.Receive, p.Opts.Middleware...)(p.context)
-	p.context.engine.BroadcastEvent(ActorStartedEvent{PID: p.pid, Timestamp: time.Now()})
+	p.context.engine.BroadcastEvent(ActorStartedEvent{PID: p.pid, Timestamp: time.now()})
 	// If we have messages in our buffer, invoke them.
 	if len(p.mbuffer) > 0 {
 		p.Invoke(p.mbuffer)
