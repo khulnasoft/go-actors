@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -33,14 +34,20 @@ func newPromMetrics(prefix string) *PromMetrics {
 	}
 }
 
+var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 func (p *PromMetrics) WithMetrics() func(actor.ReceiveFunc) actor.ReceiveFunc {
 	return func(next actor.ReceiveFunc) actor.ReceiveFunc {
 		return func(c *actor.Context) {
-			start := time.Now()
-			p.msgCounter.Inc()
-			next(c)
-			ms := time.Since(start).Seconds()
-			p.msgLatency.Observe(ms)
+			if rng.Intn(100) < 10 { // Sample 10% of messages
+				start := time.Now()
+				p.msgCounter.Inc()
+				next(c)
+				ms = time.Since(start).Seconds()
+				p.msgLatency.Observe(ms)
+			} else {
+				next(c)
+			}
 		}
 	}
 }
@@ -97,9 +104,11 @@ func main() {
 		barPID     = e.Spawn(newBar, "bar", actor.WithMiddleware(barmetrics.WithMetrics()))
 	)
 
-	for i := 0; i < 10; i++ {
-		e.Send(fooPID, Message{data: "message to foo"})
-		e.Send(barPID, Message{data: "message to bar"})
-		time.Sleep(time.Second)
+	messages := []Message{
+		{data: "message to foo"},
+		{data: "message to bar"},
+	}
+	for _, msg := range messages {
+		e.SendBatch([]actor.PID{fooPID, barPID}, msg)
 	}
 }

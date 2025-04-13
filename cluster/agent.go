@@ -96,8 +96,8 @@ func (a *Agent) handleGetActive(c *actor.Context, msg getActive) {
 		pids := make([]*actor.PID, 0)
 		for id, pid := range a.activated {
 			parts := strings.Split(id, "/")
-			if len(parts) != 2 {
-				continue
+			if len(parts) == 0 {
+				break
 			}
 			kind := parts[0]
 			if msg.kind == kind {
@@ -240,7 +240,12 @@ func (a *Agent) memberJoin(member *Member) {
 		Member: member,
 	})
 
-	slog.Debug("[CLUSTER] member joined", "id", member.ID, "host", member.Host, "kinds", member.Kinds, "region", member.Region)
+	slog.Debug("[CLUSTER] member joined",
+		"id", member.ID,
+		"host", member.Host,
+		"kinds", member.Kinds,
+		"region", member.Region,
+		"members", len(a.members.members))
 }
 
 func (a *Agent) memberLeave(member *Member) {

@@ -40,6 +40,7 @@ var (
 	receiveCount *atomic.Int64
 	sendCount    *atomic.Int64
 	deadLetters  *atomic.Int64
+	rng          = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
 func init() {
@@ -85,7 +86,7 @@ func (e *Engine) randomActor() *actor.PID {
 	return e.actors[rand.Intn(len(e.actors))]
 }
 func (e *Engine) randomTargetEngine() *Engine {
-	return e.targetEngines[rand.Intn(len(e.targetEngines))]
+	return e.targetEngines[rng.Intn(len(e.targetEngines))]
 }
 
 func newBenchmark(engineCount, actorsPerEngine, senders int) *Benchmark {
@@ -127,15 +128,20 @@ func (b *Benchmark) spawnEngines() error {
 }
 
 func (b *Benchmark) spawnActors() error {
-	for i := 0; i < b.engineCount; i++ {
-		for j := 0; j < b.actorsPerEngine; j++ {
-			id := fmt.Sprintf("engine-%d-actor-%d", i, j)
-			b.engines[i].actors[j] = b.engines[i].engine.Spawn(newActor, id)
-		}
+	var wg sync.WaitGroup
+	for _, engine := range b.engines {
+		wg.Add(1)
+		go func(e *Engine) {
+			defer wg.Done()
+			for i := 0; i < b.actorsPerEngine; i++ {
+				e.Spawn(newActor, fmt.Sprintf("actor-%d", i))
+			}
+		}(engine)
 	}
-	fmt.Printf("spawned %d actors per engine\n", b.actorsPerEngine)
+	wg.Wait()
 	return nil
 }
+
 func (b *Benchmark) sendMessages(d time.Duration) error {
 	wg := sync.WaitGroup{}
 	wg.Add(b.senders)
@@ -173,6 +179,8 @@ func benchmark() error {
 		duration        = time.Second * 10
 	)
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	if runtime.GOMAXPROCS(runtime.NumCPU()) == 1 {
 		return errors.New("GOMAXPROCS must be greater than 1")
 	}
@@ -193,13 +201,16 @@ func benchmark() error {
 	repCh := make(chan struct{})
 	go func() {
 		lastSendCount := sendCount.Load()
+		ticker := time.NewTicker(1 * time.Second)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-repCh:
 				return
-			case <-time.After(time.Second):
-				fmt.Printf("Messages sent per second %d\n", sendCount.Load()-lastSendCount)
-				lastSendCount = sendCount.Load()
+			case <-ticker.C:
+				currentSendCount := sendCount.Load()
+				slog.Info("Messages sent per second", "rate", currentSendCount-lastSendCount)
+				lastSendCount = currentSendCount
 			}
 		}
 	}()
