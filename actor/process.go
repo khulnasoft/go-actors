@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
+	"sync/atomic"
 	"time"
 
 	"github.com/DataDog/gostackparse"
@@ -33,6 +34,7 @@ type process struct {
 	pid      *PID
 	restarts int32
 	mbuffer  []Envelope
+	mcount int32
 }
 
 func newProcess(e *Engine, opts Opts) *process {
@@ -44,6 +46,7 @@ func newProcess(e *Engine, opts Opts) *process {
 		Opts:    opts,
 		context: ctx,
 		mbuffer: nil,
+		ctx.getInboxCount = p.Count
 	}
 	return p
 }
@@ -66,6 +69,7 @@ func (p *process) Invoke(msgs []Envelope) {
 		// for bookkeeping.
 		processed = 0
 	)
+	atomic.StoreInt32(&p.mcount, int32(nmsg))
 	defer func() {
 		// If we recovered, we buffer up all the messages that we could not process
 		// so we can retry them on the next restart.
@@ -77,12 +81,14 @@ func (p *process) Invoke(msgs []Envelope) {
 			for i := 0; i < nmsg-nproc; i++ {
 				p.mbuffer[i] = msgs[i+nproc]
 			}
+			atomic.StoreInt32(&p.mcount, int32(nmsg-nproc))
 			p.tryRestart(v)
 		}
 	}()
 
 	for i := 0; i < len(msgs); i++ {
 		nproc++
+		atomic.AddInt32(&p.mcount, -1)
 		msg := msgs[i]
 		if pill, ok := msg.Msg.(poisonPill); ok {
 			// If we need to gracefuly stop, we process all the messages
@@ -165,6 +171,8 @@ func (p *process) tryRestart(v any) {
 		p.cleanup(nil)
 		return
 	}
+	p.context.message = Stopped{}
+	p.context.receiver.Receive(p.context)
 
 	p.restarts++
 	// Restart the process after its restartDelay
@@ -180,7 +188,9 @@ func (p *process) tryRestart(v any) {
 }
 
 func (p *process) cleanup(cancel context.CancelFunc) {
-	defer cancel()
+	if cancel != nil {
+		defer cancel()
+	}
 
 	if p.context.parentCtx != nil {
 		p.context.parentCtx.children.Delete(p.pid.ID)
@@ -208,6 +218,10 @@ func (p *process) Send(_ *PID, msg any, sender *PID) {
 
 func (p *process) Shutdown() {
 	p.cleanup(nil)
+}
+
+func (p *process) Count() int {
+	return p.inbox.Count() + int(atomic.LoadInt32(&p.mcount))
 }
 
 func cleanTrace(stack []byte) []byte {

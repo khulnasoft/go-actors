@@ -17,11 +17,16 @@ type Context struct {
 	engine   *Engine
 	receiver Receiver
 	message  any
+	// function to get the current number of messages in the inbox
+	getInboxCount func() int
 	// the context of the parent if we are a child.
 	// we need this parentCtx, so we can remove the child from the parent Context
 	// when the child dies.
 	parentCtx *Context
 	children  *safemap.SafeMap[string, *PID]
+	getInboxCount: func() int {
+		return -1
+	},
 	context   context.Context
 }
 
@@ -173,4 +178,9 @@ func (c *Context) Engine() *Engine {
 // Message returns the message that is currently being received.
 func (c *Context) Message() any {
 	return c.message
+}
+
+// GetInboxCount returns the number of messages in the inbox of the current process.
+func (c *Context) GetInboxCount() int {
+	return c.getInboxCount()
 }
