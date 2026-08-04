@@ -45,10 +45,11 @@ const (
 
 func newContext(ctx context.Context, e *Engine, pid *PID) *Context {
 	return &Context{
-		context:  ctx,
-		engine:   e,
-		pid:      pid,
-		children: safemap.New[string, *PID](),
+		context:      ctx,
+		engine:       e,
+		pid:          pid,
+		children:     safemap.New[string, *PID](),
+		getInboxCount: func() int { return -1 },
 	}
 }
 
