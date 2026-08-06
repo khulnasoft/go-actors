@@ -13,13 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type (
-	tick         struct{}
-	tickReceiver struct {
-		ticks int
-		wg    *sync.WaitGroup
-	}
-)
+type tick struct{}
+type tickReceiver struct {
+	ticks int
+	wg    *sync.WaitGroup
+}
 
 func (r *tickReceiver) Receive(c *Context) {
 	switch c.Message().(type) {
@@ -73,7 +71,9 @@ func TestSendToNilPID(t *testing.T) {
 }
 
 func TestSendRepeat(t *testing.T) {
-	wg := &sync.WaitGroup{}
+	var (
+		wg = &sync.WaitGroup{}
+	)
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
@@ -91,9 +91,8 @@ func TestRestartsMaxRestarts(t *testing.T) {
 		data int
 	}
 	pid := e.SpawnFunc(func(c *Context) {
+		fmt.Printf("Got message type %T\n", c.Message())
 		switch msg := c.Message().(type) {
-		case Started:
-		case Stopped:
 		case payload:
 			if msg.data != 1 {
 				panic("I failed to process this message")
@@ -101,7 +100,7 @@ func TestRestartsMaxRestarts(t *testing.T) {
 				fmt.Println("finally processed all my messages after borking.", msg.data)
 			}
 		}
-	}, "foo", WithMaxRestarts(restarts))
+	}, "foo", WithMaxRetries(1), WithMaxRestarts(restarts))
 
 	for i := 0; i < 2; i++ {
 		e.Send(pid, payload{i})
@@ -158,7 +157,7 @@ func TestRestarts(t *testing.T) {
 				wg.Done()
 			}
 		}
-	}, "foo", WithRestartDelay(time.Millisecond*10))
+	}, "foo", WithRetries(0), WithRestartDelay(time.Millisecond*10))
 
 	e.Send(pid, payload{1})
 	e.Send(pid, payload{2})
@@ -274,7 +273,9 @@ func TestStopWaitContextDone(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	wg := sync.WaitGroup{}
+	var (
+		wg = sync.WaitGroup{}
+	)
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	for i := 0; i < 4; i++ {
@@ -333,7 +334,9 @@ func TestPoisonWaitGroup(t *testing.T) {
 }
 
 func TestPoison(t *testing.T) {
-	wg := sync.WaitGroup{}
+	var (
+		wg = sync.WaitGroup{}
+	)
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	for i := 0; i < 4; i++ {
@@ -375,6 +378,7 @@ func TestRequestResponse(t *testing.T) {
 		_, err := resp.Result()
 		assert.Error(t, err)
 		assert.Nil(t, e.Registry.get(resp.pid))
+
 	})
 	t.Run("should not timeout", func(t *testing.T) {
 		for i := 0; i < 200; i++ {
@@ -474,4 +478,69 @@ func TestMultipleStops(t *testing.T) {
 		}
 		<-done
 	}
+}
+
+func TestShouldNotBlockActorOnAccidentalDuplicateRespond(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+	pid := e.SpawnFunc(func(ctx *Context) {
+		msg := ctx.Message()
+		if s, ok := msg.(string); ok {
+			if s == "foo" {
+				ctx.Respond(len(s))
+				// missing `return` statement, causing an unintended second response
+			}
+			ctx.Respond(len(s)) // sends a duplicate response
+		}
+	}, "str", WithID("len"))
+
+	_ = e.Request(pid, "foo", 2*time.Second) // response will be consumed later
+	resp := e.Request(pid, "barbaz", 2*time.Second)
+
+	r, err := resp.Result()
+	require.NoError(t, err)
+	require.Equal(t, 6, r)
+}
+
+func TestShouldNotReceiveAccidentallySentSecondResult(t *testing.T) {
+	e, err := NewEngine(NewEngineConfig())
+	require.NoError(t, err)
+	done := make(chan struct{})
+	pid := e.SpawnFunc(func(ctx *Context) {
+		msg := ctx.Message()
+		if s, ok := msg.(string); ok && s == "foo" {
+			defer close(done)
+			if s == "foo" {
+				ctx.Respond(1)
+				// missing `return` statement, causing an unintended second response
+			}
+			select { // sends a duplicate response
+			case <-time.After(100 * time.Millisecond):
+			case <-runAsync(func() {
+				ctx.Respond(2)
+			}):
+			}
+		}
+	}, "kind")
+
+	resp := e.Request(pid, "foo", 200*time.Millisecond)
+	<-done
+
+	r, err := resp.Result()
+	require.NoError(t, err)
+	require.Equal(t, 1, r)
+	require.Nil(t, e.Registry.get(resp.pid))
+
+	r, err = resp.Result()
+	require.Error(t, err)
+	require.Nil(t, r)
+}
+
+func runAsync(f func()) <-chan struct{} {
+	ch := make(chan struct{})
+	go func() {
+		defer close(ch)
+		f()
+	}()
+	return ch
 }

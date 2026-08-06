@@ -12,16 +12,36 @@ import (
 )
 
 type Context struct {
-	pid          *PID
-	sender       *PID
-	engine       *Engine
-	receiver     Receiver
-	message      any
-	getInboxCount func() int
-	parentCtx    *Context
-	children     *safemap.SafeMap[string, *PID]
-	context      context.Context
+	pid                *PID
+	sender             *PID
+	engine             *Engine
+	receiver           Receiver
+	message            any
+	parentCtx          *Context
+	children           *safemap.SafeMap[string, *PID]
+	context            context.Context
+	supervisionPolicy  SupervisionPolicy
+	restartPolicy      RestartPolicy
+	healthCheckEnabled bool
+	healthCheckFunc    func() bool
+	healthCheckTicker  *time.Ticker
 }
+
+type SupervisionPolicy int
+
+const (
+	RestartChild SupervisionPolicy = iota
+	EscalateFailure
+	StopChild
+)
+
+type RestartPolicy int
+
+const (
+	ImmediateRestart RestartPolicy = iota
+	ExponentialBackoff
+	FixedDelay
+)
 
 func newContext(ctx context.Context, e *Engine, pid *PID) *Context {
 	return &Context{
@@ -42,6 +62,11 @@ func (c *Context) Receiver() Receiver {
 }
 
 func (c *Context) Request(pid *PID, msg any, timeout time.Duration) *Response {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Request completed", "pid", pid, "duration", duration)
+	}()
 	return c.engine.Request(pid, msg, timeout)
 }
 
@@ -65,8 +90,12 @@ func (c *Context) SpawnChild(p Producer, name string, opts ...OptFunc) *PID {
 	}
 	proc := newProcess(c.engine, options)
 	proc.context.parentCtx = c
+	proc.context.supervisionPolicy = c.supervisionPolicy
+	proc.context.restartPolicy = c.restartPolicy
 	pid := c.engine.SpawnProc(proc)
 	c.children.Set(pid.ID, pid)
+
+	slog.Info("Spawned child actor", "parent", c.PID(), "child", pid)
 	return proc.PID()
 }
 
@@ -75,6 +104,11 @@ func (c *Context) SpawnChildFunc(f func(*Context), name string, opts ...OptFunc)
 }
 
 func (c *Context) Send(pid *PID, msg any) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Message sent", "pid", pid, "duration", duration)
+	}()
 	c.engine.SendWithSender(pid, msg, c.pid)
 }
 
@@ -92,6 +126,11 @@ func (c *Context) SendRepeat(pid *PID, msg any, interval time.Duration) SendRepe
 }
 
 func (c *Context) Forward(pid *PID) {
+	startTime := time.Now()
+	defer func() {
+		duration := time.Since(startTime)
+		slog.Info("Message forwarded", "pid", pid, "duration", duration)
+	}()
 	c.engine.SendWithSender(pid, c.message, c.pid)
 }
 
@@ -141,6 +180,39 @@ func (c *Context) Message() any {
 	return c.message
 }
 
-func (c *Context) GetInboxCount() int {
-	return c.getInboxCount()
+func (c *Context) EnableHealthCheck(interval time.Duration, healthCheckFunc func() bool) {
+	c.healthCheckEnabled = true
+	c.healthCheckFunc = healthCheckFunc
+	c.healthCheckTicker = time.NewTicker(interval)
+	go func() {
+		for range c.healthCheckTicker.C {
+			if !c.healthCheckFunc() {
+				c.engine.BroadcastEvent(ActorUnhealthyEvent{PID: c.pid, Timestamp: time.Now()})
+				c.handleUnhealthyActor()
+			}
+		}
+	}()
+}
+
+func (c *Context) DisableHealthCheck() {
+	if c.healthCheckEnabled {
+		c.healthCheckTicker.Stop()
+		c.healthCheckEnabled = false
+	}
+}
+
+func (c *Context) handleUnhealthyActor() {
+	switch c.supervisionPolicy {
+	case RestartChild:
+		c.engine.BroadcastEvent(ActorRestartedEvent{PID: c.pid, Timestamp: time.Now()})
+		c.engine.Stop(c.pid)
+		c.engine.SpawnFunc(c.receiver.Receive, c.PID().ID)
+	case EscalateFailure:
+		if c.parentCtx != nil {
+			c.parentCtx.handleUnhealthyActor()
+		}
+	case StopChild:
+		c.engine.BroadcastEvent(ActorStoppedEvent{PID: c.pid, Timestamp: time.Now()})
+		c.engine.Stop(c.pid)
+	}
 }
