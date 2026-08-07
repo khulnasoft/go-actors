@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -166,12 +167,13 @@ func (b *Benchmark) sendMessages(d time.Duration) error {
 }
 
 func benchmark() error {
-	const (
-		engines         = 10
-		actorsPerEngine = 2000
-		senders         = 20
-		duration        = time.Second * 10
-	)
+	engines := envInt("BENCH_ENGINES", 10)
+	if engines < 1 {
+		return errors.New("BENCH_ENGINES must be at least 1")
+	}
+	actorsPerEngine := envInt("BENCH_ACTORS_PER_ENGINE", 2000)
+	senders := envInt("BENCH_SENDERS", 20)
+	duration := time.Second * time.Duration(envInt("BENCH_DURATION", 10))
 
 	if runtime.GOMAXPROCS(runtime.NumCPU()) == 1 {
 		return errors.New("GOMAXPROCS must be greater than 1")
@@ -213,6 +215,18 @@ func benchmark() error {
 	fmt.Printf("messages per second: %d\n", receiveCount.Load()/int64(duration.Seconds()))
 	fmt.Printf("deadletters: %d\n", deadLetters.Load())
 	return nil
+}
+
+func envInt(key string, def int) int {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return n
 }
 
 func main() {
