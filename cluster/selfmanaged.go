@@ -10,12 +10,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/khulnasoft/goactors/actor"
 	"github.com/grandcat/zeroconf"
+	"github.com/khulnasoft/goactors/actor"
 )
 
 const (
-	serviceName        = "_actor.goactors_"
+	serviceName        = "_actor.hollywood_"
 	domain             = "local."
 	memberPingInterval = time.Second * 2
 )

@@ -1,4 +1,15 @@
-# Goactors - Blazingly Fast, Low-Latency Actors for Golang
+[![Go Report Card](https://goreportcard.com/badge/github.com/khulnasoft/goactors)](https://goreportcard.com/report/github.com/khulnasoft/goactors)
+![example workflow](https://github.com/khulnasoft/goactors/actions/workflows/build.yml/badge.svg?branch=master)
+<a href="https://discord.gg/gdwXmXYNTh">
+	<img src="https://discordapp.com/api/guilds/1025692014903316490/widget.png?style=shield" alt="Discord Shield"/>
+</a>
+
+# Blazingly fast, low latency actors for Golang
+
+Goactors is an ULTRA fast actor engine build for speed and low-latency applications. Think about game servers,
+advertising brokers, trading engines, etc... It can handle **10 million messages in under 1 second**.
+
+## What is the actor model?
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/khulnasoft/goactors)](https://goreportcard.com/report/github.com/khulnasoft/goactors)
 ![Build Status](https://github.com/khulnasoft/goactors/actions/workflows/build.yml/badge.svg?branch=master)
@@ -17,7 +28,14 @@ Goactors is an **ultra-fast actor engine** designed for speed and low-latency ap
 ✅ **WASM Compilation:** Supports `GOOS=js` and `GOOS=wasm32`  
 ✅ **Cluster support** for distributed, self-discovering actors  
 
----
+Compiles to WASM! Both GOOS=js and GOOS=wasm32
+
+- Guaranteed message delivery on actor failure (buffer mechanism)
+- Fire & forget or request & response messaging, or both
+- High performance dRPC as the transport layer
+- Optimized proto buffers without reflection
+- Lightweight and highly customizable
+- Cluster support for writing distributed self discovering actors 
 
 ## 🔥 Benchmarks
 
@@ -53,6 +71,8 @@ go get github.com/khulnasoft/goactors/...
 
 ### Hello World Example
 
+Let's go through a Hello world message. The complete example is available in the 
+[hello world](examples/goactors) folder. Let's start in main:
 ```go
 package main
 
@@ -70,6 +90,15 @@ type helloer struct{}
 func newHelloer() actor.Receiver {
 	return &helloer{}
 }
+```
+
+Simple enough. The `newHelloer` function returns a new actor. The actor is a struct that implements the actor.Receiver.
+Lets look at the `Receive` method.
+
+```go
+type message struct {
+	data string
+}
 
 func (h *helloer) Receive(ctx *actor.Context) {
 	switch msg := ctx.Message().(type) {
@@ -84,11 +113,8 @@ func (h *helloer) Receive(ctx *actor.Context) {
 	}
 }
 
-func main() {
-	engine, _ := actor.NewEngine(actor.NewEngineConfig())
-	pid := engine.Spawn(newHelloer, "hello")
-	engine.Send(pid, &message{data: "Hello, Goactors!"})
-}
+```go
+engine.Send(pid, &message{data: "hello, world!"})
 ```
 
 📂 **More examples are available in the [examples](examples/) folder.**
@@ -271,9 +297,20 @@ parentPID := e.SpawnFunc(func(c *actor.Context) {
 }, "parent")
 ```
 
----
+# Community and discussions
+Join our Discord community with over 2000 members for questions and a nice chat.
+<br>
+<a href="https://discord.gg/gdwXmXYNTh">
+	<img src="https://discordapp.com/api/guilds/1025692014903316490/widget.png?style=banner2" alt="Discord Banner"/>
+</a>
 
-## 🩺 Actor Health Monitoring
+# Used in Production By
+
+This project is currently used in production by the following organizations/projects:
+
+- [Sensora IoT](https://sensora.io)
+
+# License
 
 Goactors provides a health monitoring system for actors to detect and handle unhealthy actors. Periodically check the health of actors and take appropriate actions, such as restarting or stopping unhealthy actors. This can be implemented by adding a health check mechanism to the actor's context and scheduling periodic health checks using the existing `SendRepeat` method.
 

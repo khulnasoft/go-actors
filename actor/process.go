@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime/debug"
-	"sync/atomic"
 	"time"
 
 	"github.com/DataDog/gostackparse"
@@ -107,7 +106,8 @@ func (p *process) Invoke(msgs []Envelope) {
 		}
 	}()
 
-	for i := 0; i < nmsg; i++ {
+	for i := 0; i < len(msgs); i++ {
+		nproc++
 		msg := msgs[i]
 		if pill, ok := msg.Msg.(poisonPill); ok {
 			if pill.graceful {
@@ -201,11 +201,13 @@ func (p *process) tryRestart(v any) {
 	p.Start()
 }
 
-// cleanup stops process, removes from registry, notifies children.
 func (p *process) cleanup(cancel context.CancelFunc) {
-	if cancel != nil {
-		defer cancel()
-	}
+	defer func() {
+		if cancel != nil {
+			cancel()
+		}
+	}()
+
 	if p.context.parentCtx != nil {
 		p.context.parentCtx.children.Delete(p.pid.ID)
 	}
@@ -223,11 +225,6 @@ func (p *process) cleanup(cancel context.CancelFunc) {
 	p.context.message = Stopped{}
 	applyMiddleware(p.context.receiver.Receive, p.Opts.Middleware...)(p.context)
 	p.context.engine.BroadcastEvent(ActorStoppedEvent{PID: p.pid, Timestamp: time.Now()})
-
-	// Notify dependent actors or services about the shutdown
-	if p.context.parentCtx != nil {
-		p.context.parentCtx.engine.BroadcastEvent(ActorStoppedEvent{PID: p.pid, Timestamp: time.Now()})
-	}
 }
 
 func (p *process) PID() *PID { return p.pid }
@@ -235,6 +232,10 @@ func (p *process) PID() *PID { return p.pid }
 // Send places a message in the process's inbox.
 func (p *process) Send(_ *PID, msg any, sender *PID) {
 	p.inbox.Send(Envelope{Msg: msg, Sender: sender})
+}
+
+func (p *process) Shutdown() {
+	p.cleanup(nil)
 }
 
 // Shutdown gracefully stops the process.
