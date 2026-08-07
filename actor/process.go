@@ -180,7 +180,11 @@ func (p *process) tryRestart(v any) {
 }
 
 func (p *process) cleanup(cancel context.CancelFunc) {
-	defer cancel()
+	defer func() {
+		if cancel != nil {
+			cancel()
+		}
+	}()
 
 	if p.context.parentCtx != nil {
 		p.context.parentCtx.children.Delete(p.pid.ID)
