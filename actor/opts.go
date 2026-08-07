@@ -8,8 +8,6 @@ import (
 const (
 	defaultInboxSize   = 1024
 	defaultMaxRestarts = 3
-	defaultRetries     = 2
-	defaultMaxRetries  = 2
 )
 
 var defaultRestartDelay = 500 * time.Millisecond
@@ -23,8 +21,6 @@ type Opts struct {
 	Kind         string
 	ID           string
 	MaxRestarts  int32
-	Retries      int32
-	MaxRetries   int32
 	RestartDelay time.Duration
 	InboxSize    int
 	Middleware   []MiddlewareFunc
@@ -39,8 +35,6 @@ func DefaultOpts(p Producer) Opts {
 		Context:      context.Background(),
 		Producer:     p,
 		MaxRestarts:  defaultMaxRestarts,
-		Retries:      defaultRetries,
-		MaxRetries:   defaultMaxRetries,
 		InboxSize:    defaultInboxSize,
 		RestartDelay: defaultRestartDelay,
 		Middleware:   []MiddlewareFunc{},
@@ -74,18 +68,6 @@ func WithInboxSize(size int) OptFunc {
 func WithMaxRestarts(n int) OptFunc {
 	return func(opts *Opts) {
 		opts.MaxRestarts = int32(n)
-	}
-}
-
-func WithRetries(n int) OptFunc {
-	return func(opts *Opts) {
-		opts.Retries = int32(n)
-	}
-}
-
-func WithMaxRetries(n int) OptFunc {
-	return func(opts *Opts) {
-		opts.MaxRetries = int32(n)
 	}
 }
 

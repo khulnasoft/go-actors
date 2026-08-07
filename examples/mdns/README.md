@@ -45,4 +45,4 @@ However it works well in most office, home, or private infrastructure environmen
 
 # License
 
-Goactors is licensed under the MIT licence.
+Go Actors is licensed under the MIT licence.

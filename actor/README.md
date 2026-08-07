@@ -4,7 +4,7 @@ This provides an overview of the abstractions and concepts used in the actor pac
 
 ## Engine
 
-The Goactors engine is the core of the actor model. It is responsible for spawning actors, sending messages
+The Go Actors engine is the core of the actor model. It is responsible for spawning actors, sending messages
 to actors and stopping actors. The engine is also responsible for the lifecycle of the actors.
 
 ## Receiver / Actor
@@ -33,7 +33,7 @@ that the actor needs to do its work. The context is also used to send messages t
 A request is a message that is sent to an actor synchronously. The request will block until the actor has
 processed the message and returned a response.
 
-Note, that some performance overhead of sending requests. Inside Goactors a single-use actor is spawned to 
+Note, that some performance overhead of sending requests. Inside Go Actors a single-use actor is spawned to 
 handle the request. This actor is then stopped when the response is received.
 
 Since requests are synchronous, they can deadlock if the actor that is processing the request sends a request
@@ -51,7 +51,7 @@ A repeater is started in the Engine when you'll like to send a message to an act
 
 ## Event & Event Stream
 
-Since Goactors is asynchronous, a lot of what would typically be returned as errors are instead broadcasted 
+Since Go Actors is asynchronous, a lot of what would typically be returned as errors are instead broadcasted 
 as events. Each Engine has an Event Stream that can be used to listen for events. The most important event is
 likely the DeadLetter event. This event is broadcasted when a message is sent to an actor that doesn't exist or cannot
 be reached.

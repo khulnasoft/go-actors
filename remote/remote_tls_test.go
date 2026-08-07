@@ -78,7 +78,7 @@ func generateTLSConfig() (*sharedConfig, error) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(2023),
 		Subject: pkix.Name{
-			Organization: []string{"Goactors Testing CA"},
+			Organization: []string{"Go Actors Testing CA"},
 		},
 		NotBefore:             time.Now(),
 		NotAfter:              time.Now().AddDate(0, 0, 1),

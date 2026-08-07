@@ -75,7 +75,9 @@ func TestSpawnChildPID(t *testing.T) {
 }
 
 func TestChild(t *testing.T) {
-	wg := sync.WaitGroup{}
+	var (
+		wg = sync.WaitGroup{}
+	)
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
@@ -142,7 +144,9 @@ func TestGetPID(t *testing.T) {
 }
 
 func TestSpawnChild(t *testing.T) {
-	wg := sync.WaitGroup{}
+	var (
+		wg = sync.WaitGroup{}
+	)
 	e, err := NewEngine(NewEngineConfig())
 	require.NoError(t, err)
 	wg.Add(1)
@@ -165,80 +169,4 @@ func TestSpawnChild(t *testing.T) {
 
 	assert.Nil(t, e.Registry.get(NewPID("local", "child")))
 	assert.Nil(t, e.Registry.get(pid))
-}
-
-func TestContextLogging(t *testing.T) {
-	e, err := NewEngine(NewEngineConfig())
-	require.NoError(t, err)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	e.SpawnFunc(func(c *Context) {
-		switch c.Message().(type) {
-		case Started:
-			c.Send(c.PID(), "test message")
-		case string:
-			assert.Equal(t, "test message", c.Message())
-			wg.Done()
-		}
-	}, "test")
-
-	wg.Wait()
-}
-
-func TestContextErrorHandling(t *testing.T) {
-	e, err := NewEngine(NewEngineConfig())
-	require.NoError(t, err)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	e.SpawnFunc(func(c *Context) {
-		switch c.Message().(type) {
-		case Started:
-			c.Send(c.PID(), "test message")
-		case string:
-			assert.Equal(t, "test message", c.Message())
-			wg.Done()
-		}
-	}, "test")
-
-	wg.Wait()
-}
-
-func TestContextAutomaticRetries(t *testing.T) {
-	e, err := NewEngine(NewEngineConfig())
-	require.NoError(t, err)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	e.SpawnFunc(func(c *Context) {
-		switch c.Message().(type) {
-		case Started:
-			c.Send(c.PID(), "test message")
-		case string:
-			assert.Equal(t, "test message", c.Message())
-			wg.Done()
-		}
-	}, "test")
-
-	wg.Wait()
-}
-
-func TestContextGracefulShutdown(t *testing.T) {
-	e, err := NewEngine(NewEngineConfig())
-	require.NoError(t, err)
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-
-	e.SpawnFunc(func(c *Context) {
-		switch c.Message().(type) {
-		case Started:
-			c.Send(c.PID(), "test message")
-		case string:
-			assert.Equal(t, "test message", c.Message())
-			wg.Done()
-		}
-	}, "test")
-
-	wg.Wait()
 }
