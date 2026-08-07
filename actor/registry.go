@@ -2,21 +2,37 @@ package actor
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 const LocalLookupAddr = "local"
 
+// registrySnapshot is an immutable copy-on-write map of registered processes.
+// Readers load the current snapshot pointer and read from it lock-free;
+// writers clone it under a mutex, mutate the copy, and republish it.
+type registrySnapshot map[string]Processer
+
+// Registry maps actor PIDs to their Processer.
+//
+// The long-lived actor table is copy-on-write: reads (the hot send path) are
+// lock-free atomic loads; writes (spawn/stop) clone the immutable snapshot
+// under a short-lived mutex. Short-lived request/response entries live in a
+// dedicated, highly-churned table so they never force a snapshot copy.
 type Registry struct {
-	mu     sync.RWMutex
-	lookup map[string]Processer
-	engine *Engine
+	mu        sync.Mutex
+	lookup    atomic.Pointer[registrySnapshot]
+	responses map[string]Processer
+	engine    *Engine
 }
 
 func newRegistry(e *Engine) *Registry {
-	return &Registry{
-		lookup: make(map[string]Processer, 1024),
-		engine: e,
+	snap := registrySnapshot(make(map[string]Processer, 1024))
+	r := &Registry{
+		responses: make(map[string]Processer),
+		engine:    e,
 	}
+	r.lookup.Store(&snap)
+	return r
 }
 
 // GetPID returns the process id associated for the given kind and its id.
@@ -33,7 +49,21 @@ func (r *Registry) GetPID(kind, id string) *PID {
 func (r *Registry) Remove(pid *PID) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	delete(r.lookup, pid.ID)
+	snap := *r.lookup.Load()
+	// Fast path: if the PID is a short-lived response, remove it there.
+	if pid.isResponse() {
+		if _, ok := r.responses[pid.ID]; ok {
+			delete(r.responses, pid.ID)
+			return
+		}
+	}
+	next := make(registrySnapshot, len(snap))
+	for k, v := range snap {
+		if k != pid.ID {
+			next[k] = v
+		}
+	}
+	r.lookup.Store(&next)
 }
 
 // get returns the processer for the given PID, if it exists.
@@ -43,39 +73,50 @@ func (r *Registry) get(pid *PID) Processer {
 	if pid == nil {
 		return nil
 	}
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	if proc, ok := r.lookup[pid.ID]; ok {
+	snap := r.lookup.Load()
+	if proc, ok := (*snap)[pid.ID]; ok {
 		return proc
+	}
+	if pid.isResponse() {
+		// short-lived requests are stored in the response table.
+		r.mu.Lock()
+		proc, ok := r.responses[pid.ID]
+		r.mu.Unlock()
+		if ok {
+			return proc
+		}
 	}
 	return nil // didn't find the processer
 }
 
 func (r *Registry) getByID(id string) Processer {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.lookup[id]
+	snap := r.lookup.Load()
+	return (*snap)[id]
 }
 
 func (r *Registry) add(proc Processer) {
 	r.mu.Lock()
 	id := proc.PID().ID
-	if _, ok := r.lookup[id]; ok {
+	snap := *r.lookup.Load()
+	if _, ok := snap[id]; ok {
 		r.mu.Unlock()
 		r.engine.BroadcastEvent(ActorDuplicateIdEvent{PID: proc.PID()})
 		return
 	}
-	r.lookup[id] = proc
+	clone := make(registrySnapshot, len(snap)+1)
+	for k, v := range snap {
+		clone[k] = v
+	}
+	clone[id] = proc
+	r.lookup.Store(&clone)
 	r.mu.Unlock()
 	proc.Start()
 }
 
-func (r *Registry) remove(pid *PID) bool {
+// registerResponse registers a pending request so that its reply can be
+// routed to the response mailbox without touching the copy-on-write snapshot.
+func (r *Registry) registerResponse(proc Processer) {
 	r.mu.Lock()
-	defer r.mu.Unlock()
-	_, ok := r.lookup[pid.ID]
-	if ok {
-		delete(r.lookup, pid.ID)
-	}
-	return ok
+	r.responses[proc.PID().ID] = proc
+	r.mu.Unlock()
 }

@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func BenchmarkGoactors(b *testing.B) {
+func BenchmarkGoActors(b *testing.B) {
 	err := benchmark()
 	if err != nil {
 		b.Fatal(err)

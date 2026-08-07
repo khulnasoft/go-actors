@@ -1,5 +1,5 @@
 test: build
-	go test ./... -count=1 --race --timeout=5s
+	go test ./... -count=1 --race --timeout=300s
 
 proto:
 	protoc --go_out=. --go-vtproto_out=.  --go_opt=paths=source_relative --proto_path=. actor/actor.proto

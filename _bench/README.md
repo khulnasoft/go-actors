@@ -1,6 +1,6 @@
-# Benchmark suite for Goactors
+# Benchmark suite for Go Actors
 
-This is a benchmark suite for the Goactors framework. It spins up a number of engines, a whole lot of actors
+This is a benchmark suite for the Go Actors framework. It spins up a number of engines, a whole lot of actors
 and then sends messages between them.
 
 ## Running the benchmark

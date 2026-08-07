@@ -1,10 +1,22 @@
 package actor
 
 import (
+	"strings"
+
 	"github.com/zeebo/xxh3"
 )
 
 const pidSeparator = "/"
+
+// responsePrefix is the kind under which short-lived request mailboxes are
+// registered. See Response.
+const responsePrefix = "response"
+
+// isResponse reports whether the PID refers to a short-lived request/response
+// mailbox owned by a *Response.
+func (pid *PID) isResponse() bool {
+	return strings.HasPrefix(pid.ID, responsePrefix+pidSeparator)
+}
 
 // NewPID returns a new Process ID given an address and an id.
 func NewPID(address, id string) *PID {

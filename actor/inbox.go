@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"sync/atomic"
 
-	"github.com/khulnasoft/goactors/ringbuffer"
+	"github.com/khulnasoft/goactors/mpsc"
 )
 
 const (
@@ -46,17 +46,19 @@ type Inboxer interface {
 }
 
 type Inbox struct {
-	rb         *ringbuffer.RingBuffer[Envelope]
+	rb         *mpsc.Queue[Envelope]
 	proc       Processer
 	scheduler  Scheduler
 	procStatus int32
+	batch      []Envelope
 }
 
 func NewInbox(size int) *Inbox {
 	return &Inbox{
-		rb:         ringbuffer.New[Envelope](int64(size)),
+		rb:         mpsc.New[Envelope](),
 		scheduler:  NewScheduler(defaultThroughput),
 		procStatus: stopped,
+		batch:      make([]Envelope, 0, messageBatchSize),
 	}
 }
 
@@ -89,11 +91,13 @@ func (in *Inbox) run() {
 		}
 		i++
 
-		if msgs, ok := in.rb.PopN(messageBatchSize); ok && len(msgs) > 0 {
-			in.proc.Invoke(msgs)
-		} else {
+		msgs, ok := in.rb.PopBatch(in.batch, messageBatchSize)
+		if !ok || len(msgs) == 0 {
 			return
 		}
+
+		in.batch = msgs[:0]
+		in.proc.Invoke(msgs)
 	}
 }
 
